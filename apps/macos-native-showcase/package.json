@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@geastack/core": "^0.1.40",
-    "@geastack/apple": "^0.2.14"
+    "@geastack/core": "^0.1.41",
+    "@geastack/apple": "^0.2.15"
   },
   "gea": {
     "id": "macos-native-showcase",

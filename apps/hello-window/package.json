@@ -4,7 +4,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@geastack/core": "^0.1.40"
+    "@geastack/core": "^0.1.41"
   },
   "gea": {
     "id": "hello-window",
