@@ -64,7 +64,7 @@ const RAW: DeviceRaw[] = [
   { id: 'esp32-s3-touch-amoled-2.06', name: 'AMOLED 2.06', cells: [
     L('display', 'CO5300 AMOLED 410x502'),
     L('touch', 'FT3168'),
-    L('buttons', 'BOOT'),
+    L('buttons', 'BOOT + PWR'),
     L('imu', 'QMI8658'),
     L('speaker', 'ES8311'),
     L('microphone', 'ES8311 ADC'),
@@ -105,7 +105,7 @@ const RAW: DeviceRaw[] = [
   { id: 'esp32-s3-touch-amoled-1.75c', name: 'AMOLED 1.75C', cells: [
     L('display', 'CO5300 AMOLED 466x466'),
     L('touch', 'CST9217'),
-    L('buttons', 'BOOT'),
+    L('buttons', 'BOOT + PWR'),
     L('imu', 'QMI8658'),
     L('speaker', 'ES8311'),
     L('microphone', 'ES7210 ADC'),
@@ -118,7 +118,7 @@ const RAW: DeviceRaw[] = [
   { id: 'esp32-s3-touch-lcd-3.49', name: 'Waveshare LCD 3.49', cells: [
     L('display', 'AXS15231B IPS 172x640'),
     L('touch', 'AXS15231B'),
-    L('buttons', 'BOOT'),
+    L('buttons', 'BOOT + PWR'),
     L('imu', 'QMI8658'),
     L('speaker', 'ES8311'),
     L('microphone', 'ES7210 ADC'),
@@ -145,7 +145,7 @@ const RAW: DeviceRaw[] = [
   { id: 'esp32-s3-epaper-1.54', name: 'E-Paper 1.54', cells: [
     L('display', 'SSD1681 e-paper 200x200'),
     L('touch', 'FT6336'),
-    L('buttons', 'BOOT'),
+    L('buttons', 'BOOT + PWR'),
     L('speaker', 'ES8311'),
     L('microphone', 'ES8311 ADC'),
     L('sdcard', 'SD_MMC 1-bit'),

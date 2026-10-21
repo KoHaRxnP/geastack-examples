@@ -2,8 +2,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  padding-top: 40px;
+  gap: 12px;
+  padding-top: 16px;
 }
 
 .buttons-hint { font-family: 'Oswald'; letter-spacing: 1px; color: var(--diag-dim); }
@@ -15,6 +15,34 @@
   gap: 6px;
 }
 
-.buttons-key { font-family: 'Oswald'; font-size: 56px; }
+.buttons-key { font-family: 'Oswald'; font-size: 40px; }
 .buttons-code { font-family: 'Inter'; font-size: 13px; color: var(--diag-dim); }
 .buttons-note { font-family: 'Inter'; font-size: 12px; color: var(--diag-accent); }
+
+/* One cell per named board button, lit while it is held. */
+.buttons-board {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+}
+
+.button-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--diag-dim);
+}
+
+.button-cell.is-down {
+  background-color: var(--diag-accent);
+  border-color: var(--diag-accent);
+}
+
+.button-name { font-family: 'Oswald'; font-size: 20px; }
+.buttons-pins { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.buttons-pin { font-family: 'Inter'; font-size: 12px; color: var(--diag-dim); }
+.button-meta { font-family: 'Inter'; font-size: 11px; color: var(--diag-dim); }

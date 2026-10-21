@@ -41,6 +41,12 @@ import {
   viewportWidth,
   viewportHeight,
   boardLabel,
+  buttonCount,
+  buttonCode,
+  buttonKey,
+  buttonPin,
+  watchDigital,
+  watchGpio,
   type WifiRow
 } from '../lib/probes'
 import type { Capability } from '../lib/capabilities'
@@ -131,9 +137,36 @@ export class DiagnosticsStore extends Store {
   touchDowns = 0
   touchMoves = 0
 
-  // buttons
+  // buttons. The board's named buttons fill fixed slots (name '' = slot
+  // unused), lit while held, from the key events whose `code` names them.
   lastKey = 0
   lastKeyName = ''
+  btnCount = 0
+  btnName0 = ''
+  btnName1 = ''
+  btnName2 = ''
+  btnName3 = ''
+  btnCode0 = ''
+  btnCode1 = ''
+  btnCode2 = ''
+  btnCode3 = ''
+  btnAlias0 = ''
+  btnAlias1 = ''
+  btnAlias2 = ''
+  btnAlias3 = ''
+  btnDown0 = 0
+  btnDown1 = 0
+  btnDown2 = 0
+  btnDown3 = 0
+  btnPresses0 = 0
+  btnPresses1 = 0
+  btnPresses2 = 0
+  btnPresses3 = 0
+  // The first two GPIO buttons, also opened as a Digital and a Gpio.
+  pinDigital = ''
+  pinGpio = ''
+  digitalEdges = 0
+  gpioEdges = 0
 
   // button-driven navigation (non-touch boards). ArrowDown cycles the highlight
   // through the focusable controls of the current context; ArrowUp activates the
@@ -231,6 +264,7 @@ export class DiagnosticsStore extends Store {
     this.osVersion = devOsVersion()
     this.resetReason = devResetReason()
     this.hasDieTemp = devHasDieTemp() ? 1 : 0
+    this.loadButtons()
     // Narrow panels get the compact home (dense grid hidden, menu windowed).
     // Threshold cleanly separates the StickS3 (135 / 67 CSS) from every larger
     // board (>=273), regardless of whether the width comes back physical or CSS.
@@ -505,10 +539,82 @@ export class DiagnosticsStore extends Store {
     playTone(hz)
   }
 
-  keydown(code: number) {
-    this.lastKey = code
-    this.lastKeyName = keyName(code)
-    this.lastKeyText = code == 0 ? '' : 'keyCode ' + code
+  loadButtons() {
+    const n = buttonCount()
+    this.btnCount = n > 4 ? 4 : n
+    for (let i = 0; i < this.btnCount; i++) {
+      const code = buttonCode(i)
+      const key = buttonKey(i)
+      const alias = key == '' ? 'no key' : key
+      if (i == 0) { this.btnCode0 = code; this.btnName0 = code.toUpperCase(); this.btnAlias0 = alias }
+      if (i == 1) { this.btnCode1 = code; this.btnName1 = code.toUpperCase(); this.btnAlias1 = alias }
+      if (i == 2) { this.btnCode2 = code; this.btnName2 = code.toUpperCase(); this.btnAlias2 = alias }
+      if (i == 3) { this.btnCode3 = code; this.btnName3 = code.toUpperCase(); this.btnAlias3 = alias }
+    }
+    this.loadPins(n)
+  }
+
+  // The pin classes on the board's own buttons: the first GPIO button through
+  // ECMA-419 Digital, the second through Gpio. Each line shows the level its
+  // callback last read and how many callbacks it got.
+  loadPins(n: number) {
+    let opened = 0
+    for (let i = 0; i < n && opened < 2; i++) {
+      const pin = buttonPin(i)
+      if (pin < 0) continue
+      const name = buttonCode(i).toUpperCase()
+      try {
+        if (opened == 0) {
+          this.pinDigital = 'Digital GPIO' + pin + ' (' + name + '): waiting'
+          watchDigital(pin, (level: number) => {
+            this.digitalEdges++
+            this.pinDigital = 'Digital GPIO' + pin + ' (' + name + '): ' + level + ' - ' + this.digitalEdges + ' calls'
+          })
+        } else {
+          this.pinGpio = 'Gpio GPIO' + pin + ' (' + name + '): waiting'
+          watchGpio(pin, (high: boolean) => {
+            this.gpioEdges++
+            this.pinGpio = 'Gpio GPIO' + pin + ' (' + name + '): ' + (high ? 'high' : 'low') + ' - ' + this.gpioEdges + ' calls'
+          })
+        }
+      } catch {
+        if (opened == 0) this.pinDigital = 'Digital GPIO' + pin + ': cannot open'
+        else this.pinGpio = 'Gpio GPIO' + pin + ': cannot open'
+      }
+      opened++
+    }
+  }
+
+  // A named button's press or release lights its slot and counts presses.
+  buttonEdge(code: string, down: number) {
+    if (code == '') return
+    if (code == this.btnCode0) { if (down == 1 && this.btnDown0 == 0) this.btnPresses0++; this.btnDown0 = down }
+    if (code == this.btnCode1) { if (down == 1 && this.btnDown1 == 0) this.btnPresses1++; this.btnDown1 = down }
+    if (code == this.btnCode2) { if (down == 1 && this.btnDown2 == 0) this.btnPresses2++; this.btnDown2 = down }
+    if (code == this.btnCode3) { if (down == 1 && this.btnDown3 == 0) this.btnPresses3++; this.btnDown3 = down }
+  }
+
+  keyup(keyCode: number, code: string) {
+    this.buttonEdge(code, 0)
+  }
+
+  // `code` names a board button ('Boot'); '' for a key with no button behind
+  // it. Navigation keeps reading keyCode, the button's default alias.
+  keydown(keyCode: number, code: string, key: string) {
+    this.buttonEdge(code, 1)
+    if (code != '') {
+      this.lastKey = -1
+      this.lastKeyName = code.toUpperCase()
+      this.lastKeyText = key != '' && key != 'Unidentified' ? 'code ' + code + ' / key ' + key : 'code ' + code
+    } else {
+      this.lastKey = keyCode
+      this.lastKeyName = keyName(keyCode)
+      this.lastKeyText = keyCode == 0 ? '' : 'keyCode ' + keyCode
+    }
+    this.keyAction(keyCode)
+  }
+
+  keyAction(code: number) {
     if (code == 40) {
       // KEY2 — always "move": home cycles the menu highlight, detail moves the
       // control-strip highlight.

@@ -7,7 +7,10 @@ import {
   audioContext,
   Clock,
   Geolocation,
-  Display
+  Display,
+  Buttons,
+  Digital,
+  Gpio
 } from '@geastack/core'
 import { SUBSYSTEMS, badgeLabel, type Capability } from '../capabilities'
 import { profileFor } from '../boardCatalog'
@@ -249,4 +252,45 @@ export function clockMs(): number {
 
 export function readGps(): GpsSample {
   return { fix: Geolocation.hasFix() ? 1 : 0, lat: Geolocation.latitude(), lon: Geolocation.longitude() }
+}
+
+// The board's named physical buttons. Presses arrive as key events whose
+// `code` is one of these names; this only lists them.
+export function buttonCount(): number {
+  return Buttons.count()
+}
+
+export function buttonCode(index: number): string {
+  return Buttons.code(index)
+}
+
+export function buttonKey(index: number): string {
+  return Buttons.key(index)
+}
+
+// The button's GPIO, -1 for one that is not a GPIO (a PMU power key).
+export function buttonPin(index: number): number {
+  return Buttons.pin(index)
+}
+
+// The two pin classes, opened on the board's own button pins so the BUTTONS
+// screen shows them seeing the same presses the key events report. Kept here
+// so the objects (and their interrupts) live as long as the app.
+const digitalPins: Digital[] = []
+const gpioPins: Gpio[] = []
+
+// ECMA-419 Digital; throws when the pin cannot be opened.
+export function watchDigital(pin: number, onLevel: (level: number) => void): void {
+  digitalPins.push(new Digital({
+    pin,
+    mode: Digital.Input,
+    edge: Digital.Rising | Digital.Falling,
+    onReadable() {
+      onLevel(this.read())
+    },
+  }))
+}
+
+export function watchGpio(pin: number, onLevel: (high: boolean) => void): void {
+  gpioPins.push(new Gpio(pin, { onChange: onLevel }))
 }

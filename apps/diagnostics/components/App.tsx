@@ -10,7 +10,8 @@ export class App extends Component {
     return (
       <div
         class="diag-root"
-        onKeyDown={event => diag.keydown(event.keyCode)}
+        onKeyDown={event => diag.keydown(event.keyCode, event.code, event.key)}
+        onKeyUp={event => diag.keyup(event.keyCode, event.code)}
         onRotary={event => diag.rotary(event.delta)}
       >
         <div class="diag-body">
