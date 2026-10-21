@@ -3,7 +3,7 @@ import { diag } from '../../stores/DiagnosticsStore'
 import './screens-common.css'
 import './NotPresent.css'
 import { DisplayScreen } from './DisplayScreen'
-import { TouchScreen } from './TouchScreen'
+import { TouchScreen, TouchPad } from './TouchScreen'
 import { ButtonsScreen } from './ButtonsScreen'
 import { RotaryScreen } from './RotaryScreen'
 import { ImuScreen } from './ImuScreen'
@@ -25,8 +25,8 @@ export class ScreenHost extends Component {
     const id = diag.screen
     return (
       <div class="screen">
-        <div class="screen-scroll" id="diag-body">
-        <div class="screen-scroll-inner">
+        <div class="screen-scroll" id="diag-body" momentum="true">
+        <div class={diag.round == 1 ? 'screen-scroll-inner is-round' : 'screen-scroll-inner'}>
         {diag.curState != 'live' ? (
           <div class="screen-body">
             <div class="not-present">
@@ -56,7 +56,8 @@ export class ScreenHost extends Component {
          <div class="screen-body"></div>}
         </div>
         </div>
-        <div class="screen-head">
+        {id == 'touch' && diag.curState == 'live' ? <TouchPad /> : null}
+        <div class={diag.round == 1 ? 'screen-head is-round' : 'screen-head'}>
           {diag.compact == 0 ? (
             <div id="back" class="screen-back" onClick={() => diag.back()}>{'< BACK'}</div>
           ) : null}

@@ -15,7 +15,6 @@ import {
 } from '../lib/deviceInfo'
 import {
   capabilities,
-  readTouch,
   storageSelfTest,
   sdSelfTest,
   imuStart,
@@ -33,6 +32,8 @@ import {
   bleStartAdvertising,
   bleStopAdvertising,
   playTone,
+  micStartTest,
+  micStopTest,
   clockMs,
   readGps,
   readDisplay,
@@ -43,6 +44,7 @@ import {
   type WifiRow
 } from '../lib/probes'
 import type { Capability } from '../lib/capabilities'
+import { isRoundDisplay } from '../lib/boardCatalog'
 
 function round2(v: number): string {
   return String(Math.round(v * 100) / 100)
@@ -120,10 +122,14 @@ export class DiagnosticsStore extends Store {
   dieTemp = 0
   hasDieTemp = 0
 
-  // touch
+  // touch: driven by the touch events themselves (touchStart/Move/End), so
+  // every contact registers however short it is, in the CSS px the UI
+  // hit-tests with -- the marker on the full-screen pad layer sits there too.
   touchX = 0
   touchY = 0
   touching = 0
+  touchDowns = 0
+  touchMoves = 0
 
   // buttons
   lastKey = 0
@@ -165,6 +171,7 @@ export class DiagnosticsStore extends Store {
   // of rows that fit, sliding it to keep the highlight visible. On roomy boards
   // visibleCount exceeds the row count, so the whole list renders as before.
   compact = 0
+  round = 0 // 1 on round panels: the screen header moves inside the circle
   visibleCount = 999
   winStart = 0
   visibleRows: Capability[] = []
@@ -177,6 +184,9 @@ export class DiagnosticsStore extends Store {
   // wifi
   wifiEnabled = 0
   wifiScanning = 0
+  micRecording = 0
+  micStartedMs = 0
+  micStatus = 'IDLE'
   wifiRows: WifiRow[] = []
   wifiSsid = ''
   wifiIp = ''
@@ -225,6 +235,7 @@ export class DiagnosticsStore extends Store {
     // Threshold cleanly separates the StickS3 (135 / 67 CSS) from every larger
     // board (>=273), regardless of whether the width comes back physical or CSS.
     this.compact = viewportWidth() < 200 ? 1 : 0
+    this.round = isRoundDisplay(devId()) ? 1 : 0
     // Fill the canvas with as many menu rows as fit. Display width/height come
     // back in physical px, so convert to the CSS canvas via the DPR before
     // dividing by the CSS row height (~16) minus the header+hint reserve (~44).
@@ -269,6 +280,7 @@ export class DiagnosticsStore extends Store {
     if (id == 'wifi') return this.curState == 'live' ? ['back', 'wifi.toggle', 'wifi.scan'] : ['back']
     if (id == 'ble') return this.curState == 'live' ? ['back', 'ble.toggle'] : ['back']
     if (id == 'speaker') return this.curState == 'live' ? ['back', 'speaker.440', 'speaker.880', 'speaker.1320'] : ['back']
+    if (id == 'microphone') return this.curState == 'live' ? ['back', 'mic.record'] : ['back']
     return ['back']
   }
 
@@ -300,6 +312,7 @@ export class DiagnosticsStore extends Store {
     if (id == 'sdcard') return [back, new Control('sdcard.test', 'RUN TEST', 0)]
     if (id == 'ble') return [back, new Control('ble.toggle', 'ADVERTISE', 0)]
     if (id == 'wifi') return [back, new Control('wifi.toggle', 'ON/OFF', 0), new Control('wifi.scan', 'SCAN', 0)]
+    if (id == 'microphone') return [back, new Control('mic.record', 'RECORD 2s', 0)]
     if (id == 'speaker')
       return [
         back,
@@ -357,6 +370,7 @@ export class DiagnosticsStore extends Store {
     else if (a == 'speaker.440') this.tone(440)
     else if (a == 'speaker.880') this.tone(880)
     else if (a == 'speaker.1320') this.tone(1320)
+    else if (a == 'mic.record') this.recordMic()
   }
 
   // ArrowDown on the home menu: cycle the highlight to the next subsystem (wraps).
@@ -399,6 +413,11 @@ export class DiagnosticsStore extends Store {
     this.curDetail = this.detailOf(id)
     this.curBadge = state == 'detected' ? 'DETECTED' : 'N/A'
     this.curMsg = state == 'detected' ? 'DETECTED - NOT EXERCISED BY THIS FIRMWARE' : 'NOT PRESENT ON THIS DEVICE'
+    if (id == 'touch') {
+      this.touching = 0
+      this.touchDowns = 0
+      this.touchMoves = 0
+    }
     if (id == 'display') {
       const d = readDisplay()
       this.dispRes = d.res
@@ -458,6 +477,15 @@ export class DiagnosticsStore extends Store {
     this.wifiEnabled = next ? 1 : 0
   }
 
+  // 3, 2 = opening: the codec open blocks for ~0.5 s, so let one frame paint
+  // the status first (tick() runs before the paint of its own frame), open the
+  // mic on the tick after, then time the 2 s from the real start.
+  recordMic() {
+    if (this.micRecording != 0) return
+    this.micRecording = 3
+    this.micStatus = 'OPENING MIC...'
+  }
+
   scanWifi() {
     wifiStartScan()
     this.wifiScanning = 1
@@ -495,11 +523,34 @@ export class DiagnosticsStore extends Store {
       else this.ctrlAct()
       return
     }
-    if (this.screen != '' && (code == 27 || code == 8)) this.back()
+    // The buttons test only records: a board whose sole key is BOOT (sent as
+    // Escape) would otherwise leave the screen on the press it is testing.
+    if (this.screen != '' && this.screen != 'buttons' && (code == 27 || code == 8)) this.back()
   }
 
   rotary(delta: number) {
     this.rotaryValue = this.rotaryValue + delta
+  }
+
+  touchStart(x: number, y: number) {
+    this.touchDowns++
+    this.touchAt(x, y)
+    this.touching = 1
+  }
+
+  touchMove(x: number, y: number) {
+    this.touchMoves++
+    this.touchAt(x, y)
+  }
+
+  touchEnd(x: number, y: number) {
+    this.touchAt(x, y)
+    this.touching = 0
+  }
+
+  touchAt(x: number, y: number) {
+    this.touchX = Math.round(x)
+    this.touchY = Math.round(y)
   }
 
   tick() {
@@ -511,12 +562,20 @@ export class DiagnosticsStore extends Store {
       this.dieTempText = 'N/A'
     }
 
-    if (this.screen == 'touch') {
-      const t = readTouch()
-      this.touching = t.touching ? 1 : 0
-      this.touchX = t.x
-      this.touchY = t.y
-    } else if (this.screen == 'wifi' && this.stateOf('wifi') == 'live') {
+    if (this.micRecording == 3) {
+      this.micRecording = 2
+    } else if (this.micRecording == 2) {
+      micStartTest()
+      this.micRecording = 1
+      this.micStartedMs = Date.now()
+      this.micStatus = 'RECORDING...'
+    } else if (this.micRecording == 1 && Date.now() - this.micStartedMs >= 2000) {
+      micStopTest()
+      this.micRecording = 0
+      this.micStatus = 'SAVED /storage/mic-test.wav'
+    }
+
+    if (this.screen == 'wifi' && this.stateOf('wifi') == 'live') {
       this.wifiEnabled = wifiIsEnabled() ? 1 : 0
       if (this.wifiScanning == 1 && !wifiIsScanning()) {
         this.wifiScanning = 0

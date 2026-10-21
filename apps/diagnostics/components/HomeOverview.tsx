@@ -6,7 +6,7 @@ import './HomeOverview.css'
 export class HomeOverview extends Component {
   template() {
     return (
-      <div class="home-overview">
+      <div class="home-overview" momentum="true">
         <div class="overview-card">
           <div class="overview-head">
             <span class="overview-name">{diag.deviceName}</span>

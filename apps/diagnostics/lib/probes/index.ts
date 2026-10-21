@@ -1,5 +1,4 @@
 import {
-  touch,
   writeCacheFile,
   readCacheFile,
   WiFi,
@@ -8,8 +7,7 @@ import {
   audioContext,
   Clock,
   Geolocation,
-  Display,
-  type TouchSample
+  Display
 } from '@geastack/core'
 import { SUBSYSTEMS, badgeLabel, type Capability } from '../capabilities'
 import { profileFor } from '../boardCatalog'
@@ -108,11 +106,6 @@ export function boardLabel(id: string): string {
   return profileFor(id).name
 }
 
-// --- touch ------------------------------------------------------------------
-export function readTouch(): TouchSample {
-  return touch.read()
-}
-
 // --- storage / sd -----------------------------------------------------------
 export function storageSelfTest(): boolean {
   const key = '__diag_probe'
@@ -196,12 +189,47 @@ export function bleConnected(): boolean {
   return BLE.connected()
 }
 
+let bleHostStarted = false
+
 export function bleStartAdvertising(): void {
+  // The controller is preinitialized at boot, but the host only comes up on
+  // init(); advertising requested before that is deferred forever. Start the
+  // host on first use (it advertises as soon as it syncs).
+  if (!bleHostStarted) {
+    bleHostStarted = true
+    BLE.init(BLE.deviceName())
+  }
   BLE.startAdvertising()
 }
 
 export function bleStopAdvertising(): void {
   BLE.stopAdvertising()
+}
+
+// --- microphone --------------------------------------------------------------
+// A short WAV capture to internal flash, so a host can pull it (gea devctl
+// pull) and check the level: the capture path is otherwise invisible.
+export const MIC_TEST_PATH = '/storage/mic-test.wav'
+
+let micStream = new MediaStream()
+let micRecorder = new MediaRecorder(micStream)
+let micActive = 0
+
+export async function micStartTest(): Promise<void> {
+  if (micActive) return
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  micRecorder = new MediaRecorder(micStream, { mimeType: 'audio/wav', path: MIC_TEST_PATH })
+  micActive = 1
+  micRecorder.start()
+}
+
+export function micStopTest(): void {
+  if (!micActive) return
+  if (micRecorder.state == 'recording') micRecorder.stop()
+  // for-of, not tracks[i].stop(): a call through a computed member is opaque
+  // to the style analyzer and would compile every CSS feature into the build.
+  for (const track of micStream.getTracks()) track.stop()
+  micActive = 0
 }
 
 // --- speaker -----------------------------------------------------------------

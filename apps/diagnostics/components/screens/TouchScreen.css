@@ -1,17 +1,15 @@
+/* Covers the whole screen under the pinned header (which paints after it, so
+   BACK still takes its own taps). */
 .touch-pad {
-  position: relative;
-  margin-top: 16px;
-  height: 220px;
-  border: 1px dashed var(--diag-line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  inset: 0;
 }
 
 .touch-hint {
   font-family: 'Oswald';
   color: var(--diag-dim);
   letter-spacing: 1px;
+  margin-top: 12px;
 }
 
 .touch-dot {

@@ -79,6 +79,13 @@
                 "fuseReplayFlush": false
               }
             }
+          },
+          "esp32-s3-touch-lcd-3.49": {
+            "build": {
+              "renderer": {
+                "fuseReplayFlush": false
+              }
+            }
           }
         }
       },

@@ -21,6 +21,14 @@
   border-bottom: 2px solid var(--diag-line);
 }
 
+/* Round panels: the corners are off-glass. Drop the header into the circle and
+   center it so BACK is fully visible and reachable. */
+.screen-head.is-round {
+  height: 76px;
+  padding: 32px 18px 8px;
+  justify-content: center;
+}
+
 .screen-back {
   font-family: 'Oswald';
   font-size: 18px;
@@ -42,10 +50,16 @@
   position: absolute;
   inset: 0;
   overflow-y: auto;
+  /* Screens scroll vertically only; a wide row must not pan sideways. */
+  overflow-x: hidden;
 }
 
 .screen-scroll-inner {
   padding-top: 46px; /* clear the pinned header */
+}
+
+.screen-scroll-inner.is-round {
+  padding-top: 76px;
 }
 
 .screen-body {

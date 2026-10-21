@@ -102,6 +102,32 @@ const RAW: DeviceRaw[] = [
     L('gps', 'LC76G (UART)'),
     L('temperature', 'S3 die sensor')
   ] },
+  { id: 'esp32-s3-touch-amoled-1.75c', name: 'AMOLED 1.75C', cells: [
+    L('display', 'CO5300 AMOLED 466x466'),
+    L('touch', 'CST9217'),
+    L('buttons', 'BOOT'),
+    L('imu', 'QMI8658'),
+    L('speaker', 'ES8311'),
+    L('microphone', 'ES7210 ADC'),
+    L('storage', 'NVS + SPIFFS'),
+    L('wifi', 'native'),
+    L('ble', 'NimBLE'),
+    L('battery', 'AXP2101 gauge'),
+    L('temperature', 'S3 die sensor')
+  ] },
+  { id: 'esp32-s3-touch-lcd-3.49', name: 'Waveshare LCD 3.49', cells: [
+    L('display', 'AXS15231B IPS 172x640'),
+    L('touch', 'AXS15231B'),
+    L('buttons', 'BOOT'),
+    L('imu', 'QMI8658'),
+    L('speaker', 'ES8311'),
+    L('microphone', 'ES7210 ADC'),
+    L('storage', 'NVS + SPIFFS'),
+    L('wifi', 'native'),
+    L('ble', 'NimBLE'),
+    L('battery', 'ADC estimate'),
+    L('temperature', 'S3 die sensor')
+  ] },
   { id: 'esp32-s3-touch-lcd-1.54', name: 'Waveshare LCD 1.54', cells: [
     L('display', 'ST7789 240x240'),
     L('touch', 'CST816'),
@@ -119,7 +145,7 @@ const RAW: DeviceRaw[] = [
   { id: 'esp32-s3-epaper-1.54', name: 'E-Paper 1.54', cells: [
     L('display', 'SSD1681 e-paper 200x200'),
     L('touch', 'FT6336'),
-    L('buttons', 'BOOT + PWR'),
+    L('buttons', 'BOOT'),
     L('speaker', 'ES8311'),
     L('microphone', 'ES8311 ADC'),
     L('sdcard', 'SD_MMC 1-bit'),
@@ -227,6 +253,12 @@ const RAW: DeviceRaw[] = [
     D('rtc', 'PMIC RTC (unprobed)')
   ] }
 ]
+
+// Round panels clip the corners: their header sits lower and centered so
+// BACK stays inside the visible circle.
+export function isRoundDisplay(id: string): boolean {
+  return id == 'esp32-s3-touch-amoled-1.75' || id == 'esp32-s3-touch-amoled-1.75c'
+}
 
 function findRaw(id: string): DeviceRaw | null {
   for (let i = 0; i < RAW.length; i++) if (RAW[i].id == id) return RAW[i]

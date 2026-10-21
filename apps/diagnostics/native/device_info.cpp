@@ -14,8 +14,10 @@
 #define GEA_DEVINFO_ESP_IDF 1
 #endif
 
-#ifndef GEA_EMBEDDED_CPP_BOARD
-#define GEA_EMBEDDED_CPP_BOARD "unknown"
+// GEA_EMBEDDED_CPP_BOARD is only a defined-or-not flag on ESP32 builds; the board
+// name arrives as the GEA_EMBEDDED_BOARD_ID string.
+#ifndef GEA_EMBEDDED_BOARD_ID
+#define GEA_EMBEDDED_BOARD_ID "unknown"
 #endif
 
 #ifdef GEA_DEVINFO_ESP_IDF
@@ -50,7 +52,7 @@ esp_chip_info_t chip() {
 }
 }  // namespace
 
-std::string deviceId() { return GEA_EMBEDDED_CPP_BOARD; }
+std::string deviceId() { return GEA_EMBEDDED_BOARD_ID; }
 std::string platform() { return "esp-idf"; }
 
 std::string chipModel() {
